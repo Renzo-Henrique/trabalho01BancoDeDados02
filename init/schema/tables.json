@@ -1,17 +1,66 @@
 [
   {
-    "TableName": "account",
-    "KeySchema": [
-      { "AttributeName": "account_number", "KeyType": "HASH" },
-      { "AttributeName": "branch_name", "KeyType": "RANGE" }
-    ],
+    "TableName": "branch",
     "AttributeDefinitions": [
-      { "AttributeName": "account_number", "AttributeType": "S" },
       { "AttributeName": "branch_name", "AttributeType": "S" }
     ],
-    "ProvisionedThroughput": {
-      "ReadCapacityUnits": 5,
-      "WriteCapacityUnits": 5
-    }
+    "KeySchema": [
+      { "AttributeName": "branch_name", "KeyType": "HASH" }
+    ],
+    "BillingMode": "PAY_PER_REQUEST"
+  },
+  {
+    "TableName": "customer",
+    "AttributeDefinitions": [
+      { "AttributeName": "customer_name", "AttributeType": "S" }
+    ],
+    "KeySchema": [
+      { "AttributeName": "customer_name", "KeyType": "HASH" }
+    ],
+    "BillingMode": "PAY_PER_REQUEST"
+  },
+  {
+    "TableName": "account",
+    "AttributeDefinitions": [
+      { "AttributeName": "account_number", "AttributeType": "S" }
+    ],
+    "KeySchema": [
+      { "AttributeName": "account_number", "KeyType": "HASH" }
+    ],
+    "BillingMode": "PAY_PER_REQUEST"
+  },
+  {
+    "TableName": "loan",
+    "AttributeDefinitions": [
+      { "AttributeName": "loan_number", "AttributeType": "S" }
+    ],
+    "KeySchema": [
+      { "AttributeName": "loan_number", "KeyType": "HASH" }
+    ],
+    "BillingMode": "PAY_PER_REQUEST"
+  },
+  {
+    "TableName": "borrower",
+    "AttributeDefinitions": [
+      { "AttributeName": "customer_name", "AttributeType": "S" },
+      { "AttributeName": "loan_number", "AttributeType": "S" }
+    ],
+    "KeySchema": [
+      { "AttributeName": "customer_name", "KeyType": "HASH" },
+      { "AttributeName": "loan_number", "KeyType": "RANGE" }
+    ],
+    "BillingMode": "PAY_PER_REQUEST"
+  },
+  {
+    "TableName": "depositor",
+    "AttributeDefinitions": [
+      { "AttributeName": "customer_name", "AttributeType": "S" },
+      { "AttributeName": "account_number", "AttributeType": "S" }
+    ],
+    "KeySchema": [
+      { "AttributeName": "customer_name", "KeyType": "HASH" },
+      { "AttributeName": "account_number", "KeyType": "RANGE" }
+    ],
+    "BillingMode": "PAY_PER_REQUEST"
   }
 ]
