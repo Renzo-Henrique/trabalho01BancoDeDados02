@@ -1,0 +1,17 @@
+[
+  {
+    "TableName": "account",
+    "KeySchema": [
+      { "AttributeName": "account_number", "KeyType": "HASH" },
+      { "AttributeName": "branch_name", "KeyType": "RANGE" }
+    ],
+    "AttributeDefinitions": [
+      { "AttributeName": "account_number", "AttributeType": "S" },
+      { "AttributeName": "branch_name", "AttributeType": "S" }
+    ],
+    "ProvisionedThroughput": {
+      "ReadCapacityUnits": 5,
+      "WriteCapacityUnits": 5
+    }
+  }
+]
