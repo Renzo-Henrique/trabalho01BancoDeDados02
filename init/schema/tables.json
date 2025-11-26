@@ -62,5 +62,26 @@
       { "AttributeName": "account_number", "KeyType": "RANGE" }
     ],
     "BillingMode": "PAY_PER_REQUEST"
-  }
+  },
+  {
+	"TableName": "users",
+	"AttributeDefinitions": [
+		{ "AttributeName": "username", "AttributeType": "S" }
+	],
+	"KeySchema": [
+		{ "AttributeName": "username", "KeyType": "HASH" }
+	],
+	"BillingMode": "PAY_PER_REQUEST"
+  },
+  {
+	"TableName": "roles",
+	"AttributeDefinitions": [
+		{ "AttributeName": "role_name", "AttributeType": "S" }
+	],
+	"KeySchema": [
+		{ "AttributeName": "role_name", "KeyType": "HASH" }
+	],
+	"BillingMode": "PAY_PER_REQUEST"
+	}
+
 ]
