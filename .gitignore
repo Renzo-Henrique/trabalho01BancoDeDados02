@@ -11,7 +11,6 @@ __pycache__/
 # Docker
 *.env
 docker-compose.override.yml
-data/
 dbdata/
 *.log
 tmp/

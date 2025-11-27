@@ -1,0 +1,39 @@
+{
+  "roles": [
+    {"PutRequest": {"Item": {"role_name":{"S":"admin"},"permissions":{"L":[{"S":"*"}]}}}},
+    {"PutRequest": {"Item": {"role_name":{"S":"writer"},"permissions":{"L":[
+		{"S":"account:read"},
+		{"S":"account:write"},
+		{"S":"account:update"},
+		{"S":"account:delete"},
+		{"S":"borrower:read"},
+		{"S":"borrower:write"},
+		{"S":"borrower:update"},
+		{"S":"borrower:delete"},
+		{"S":"branch:read"},
+		{"S":"branch:write"},
+		{"S":"branch:update"},
+		{"S":"branch:delete"},
+		{"S":"customer:read"},
+		{"S":"customer:write"},
+		{"S":"customer:update"},
+		{"S":"customer:delete"},
+		{"S":"depositor:read"},
+		{"S":"depositor:write"},
+		{"S":"depositor:update"},
+		{"S":"depositor:delete"},
+		{"S":"loan:read"},
+		{"S":"loan:write"},
+		{"S":"loan:update"},
+		{"S":"loan:delete"}
+		]}}}},
+    {"PutRequest": {"Item": {"role_name":{"S":"reader"},"permissions":{"L":[
+		{"S":"account:read"},
+		{"S":"borrower:read"},
+		{"S":"branch:read"},
+		{"S":"customer:read"},
+		{"S":"depositor:read"},
+		{"S":"loan:read"}
+          ]}}}}
+  ]
+}

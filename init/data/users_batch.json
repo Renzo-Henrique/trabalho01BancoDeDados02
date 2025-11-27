@@ -1,0 +1,14 @@
+{
+  "users": [
+    {"PutRequest": 
+		{"Item": {"username":{"S":"admin1"},"password":{"S":"AdminPass1"},"role_name":{"L":[{"S":"admin"}]}}}},
+    {"PutRequest": 
+		{"Item": {"username":{"S":"writer1"},"password":{"S":"WriterPass1"},"role_name":{"L":[{"S":"writer"}]}}}},
+    {"PutRequest": 
+		{"Item": {"username":{"S":"writer2"},"password":{"S":"WriterPass2"},"role_name":{"L":[{"S":"writer"}]}}}},
+    {"PutRequest": 
+		{"Item": {"username":{"S":"reader1"},"password":{"S":"ReaderPass1"},"role_name":{"L":[{"S":"reader"}]}}}},
+    {"PutRequest": 
+		{"Item": {"username":{"S":"reader2"},"password":{"S":"ReaderPass2"},"role_name":{"L":[{"S":"reader"}]}}}}
+  ]
+}
