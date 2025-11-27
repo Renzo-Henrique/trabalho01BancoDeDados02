@@ -3,3 +3,5 @@ uvicorn
 pydantic
 boto3
 python-jose[cryptography] # Para JWT
+pytest
+httpx
