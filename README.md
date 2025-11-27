@@ -23,24 +23,18 @@ O arquivo `docker-compose.yml` inicia a API (`auth-api`) e uma instância local 
 
 
 ```bash
-docker-compose up --build -d
-```
-
-### 2. Verificar Status
-Verifique se os contêineres estão rodando:
-
-```bash
-docker ps
+docker compose up --build
 ```
 
 - A versão admin estará acessível em http://localhost:8001.
+
 ![Captura de tela do painel admin, permitindo CRUDE em todas as tabelas](./imagensReadme/documentacaoApi.png")
 
 - A documentação interativa da API (Swagger UI) está em http://localhost:8080/docs.
 
 ![Captura de tela da documentação interativa](./imagensReadme/documentacaoApi.png")
 
-### 3. Acessar Logs da API
+### 2. Acessar Logs da API
 Para acompanhar o funcionamento da API em tempo real:
 
 ```bash
