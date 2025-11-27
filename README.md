@@ -28,11 +28,19 @@ docker compose up --build
 
 - A versão admin estará acessível em http://localhost:8001.
 
-![Captura de tela do painel admin, permitindo CRUDE em todas as tabelas](./imagensReadme/painelAdmin.png)
+
+
+| ![Captura de tela do painel admin, permitindo CRUDE em todas as tabelas](./imagensReadme/painelAdmin.png) |
+|:---------------------------------:|
+| *Captura de tela do painel admin, permitindo CRUDE em todas as tabelas* |
+
 
 - A documentação interativa da API (Swagger UI) está em http://localhost:8080/docs.
 
-![Captura de tela da documentação interativa](./imagensReadme/documentacaoApi.png)
+
+| ![Captura de tela da documentação interativa](./imagensReadme/documentacaoApi.png) |
+|:---------------------------------:|
+| *Captura de tela da documentação interativa* |
 
 ### 2. Acessar Logs da API
 Para acompanhar o funcionamento da API em tempo real:
@@ -75,10 +83,16 @@ Use export para facilitar reuso do token de acesso nos testes. **OBS:Deve ser ex
 export AUTH_TOKEN="eyJhbGciO....."
 ```
 
-![Captura de tela de um exemplo de execução](./imagensReadme/exemploExecucao.png)
 
-![Captura de tela do Log gerado pelo exemplo](./imagensReadme/exemploLog.png)
+| ![Captura de tela de um exemplo de execução](./imagensReadme/exemploExecucao.png) |
+|:---------------------------------:|
+| *Captura de tela de um exemplo de execução* |
 
+
+
+| ![Captura de tela do Log gerado pelo exemplo](./imagensReadme/exemploLog.png)|
+|:---------------------------------:|
+| *Captura de tela do Log gerado pelo exemplo* |
 
 ## 3. Exemplos do **reader**
 
@@ -268,7 +282,10 @@ test_auth.py ....................................
 ============================== 36 passed in 1.38s ==============================
 ```
 
-![Captura de tela dos resultados esperados dos testes sobre a tabela **customer**](./imagensReadme/testesComResultadosEsperados01.png)
+| ![Captura de tela dos resultados esperados dos testes sobre a tabela **customer**](./imagensReadme/testesComResultadosEsperados01.png) |
+|:---------------------------------:|
+| *Captura de tela dos resultados esperados dos testes sobre a tabela customer* |
+
 
 ## Licença
 Distribuído por meio da licença GNU. Veja [LICENSE](./LICENSE) para mais informações.
