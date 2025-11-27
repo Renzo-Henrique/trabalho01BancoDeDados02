@@ -3,11 +3,14 @@ set -e
 
 # Caminho para o JSON de tabelas
 TABLES_FILE="/home/dynamodblocal/init/schema/tables.json"
-
+# Script de inicialização de dados
+INIT_SCRIPT="/home/dynamodblocal/init/scripts/init_tables.sh"
 # Endpoint do DynamoDB Local
 ENDPOINT="http://localhost:8000"
 
 echo "===== Iniciando criação de tabelas..."
+# Inicializa a variável (0 = Nenhuma tabela criada)
+INIT_FLAG=0
 
 for row in $(jq -c '.[]' $TABLES_FILE); do
     TABLE_NAME=$(echo $row | jq -r '.TableName')
@@ -21,6 +24,8 @@ for row in $(jq -c '.[]' $TABLES_FILE); do
             --cli-input-json "$row" \
             --endpoint-url $ENDPOINT
         echo "Tabela $TABLE_NAME criada!"
+		# Se uma tabela foi criada, define a flag como 1
+        INIT_FLAG=1
     fi
 done
 
@@ -28,3 +33,12 @@ done
 sleep 2
 
 echo "Todas as tabelas foram processadas."
+
+# === LÓGICA DE INICIALIZAÇÃO CONDICIONAL ===
+if [[ "$INIT_FLAG" == "1" ]]; then
+    echo "===== Tabelas novas detectadas. Inserindo dados iniciais... ====="
+    # Chama o init_tables.sh diretamente
+    bash "$INIT_SCRIPT"
+else
+    echo "===== Nenhuma tabela nova criada. Mantendo dados existentes. ====="
+fi

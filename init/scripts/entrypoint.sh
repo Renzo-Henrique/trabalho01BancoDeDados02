@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+# Scripts
+CREATE_TABLE_SCRIPT="/home/dynamodblocal/init/scripts/init_tables.sh"
+CLEAN_TABLE_SCRIPT="/home/dynamodblocal/init/scripts/clean_db.sh"
+
 # Inicia o DynamoDB em background
 java -jar DynamoDBLocal.jar -sharedDb -dbPath ./data &
 
@@ -10,16 +14,13 @@ sleep 5
 
 if [[ "$RESET_DB" == "true" ]]; then
 	echo "=== RESET_DB=true :: Limpando todas as tabelas ==="
-	bash /home/dynamodblocal/init/scripts/clean_db.sh
+	bash $CLEAN_TABLE_SCRIPT
 else
 	echo "=== RESET_DB=false :: Mantendo tabelas existentes ==="
 fi
 
 # Executa script de criação de tabelas
-bash /home/dynamodblocal/init/scripts/create_tables.sh
-
-# Insere dados
-bash /home/dynamodblocal/init/scripts/init_tables.sh
+bash $CREATE_TABLE_SCRIPT
 
 # Mantém o processo principal em foreground
 wait
