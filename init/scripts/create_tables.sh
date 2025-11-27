@@ -17,13 +17,14 @@ for row in $(jq -c '.[]' $TABLES_FILE); do
 
     # Verifica se a tabela já existe
     if aws dynamodb describe-table --table-name "$TABLE_NAME" --endpoint-url $ENDPOINT &> /dev/null; then
-        echo "Tabela $TABLE_NAME já existe, pulando..."
+        # echo "	Tabela $TABLE_NAME já existe, pulando..."
+		:
     else
-        echo "Criando tabela $TABLE_NAME..."
+        #echo "Criando tabela $TABLE_NAME..."
         aws dynamodb create-table \
             --cli-input-json "$row" \
             --endpoint-url $ENDPOINT
-        echo "Tabela $TABLE_NAME criada!"
+        #echo "	Tabela $TABLE_NAME criada!"
 		# Se uma tabela foi criada, define a flag como 1
         INIT_FLAG=1
     fi
@@ -32,13 +33,12 @@ done
 # Pequeno delay para garantir que a tabela esteja ativa
 sleep 2
 
-echo "Todas as tabelas foram processadas."
-
 # === LÓGICA DE INICIALIZAÇÃO CONDICIONAL ===
 if [[ "$INIT_FLAG" == "1" ]]; then
-    echo "===== Tabelas novas detectadas. Inserindo dados iniciais... ====="
+    echo "===== Inserindo dados iniciais... ====="
     # Chama o init_tables.sh diretamente
     bash "$INIT_SCRIPT"
 else
-    echo "===== Nenhuma tabela nova criada. Mantendo dados existentes. ====="
+    echo "===== Nenhuma tabela nova criada."
+	echo "===== Mantendo dados existentes. "
 fi

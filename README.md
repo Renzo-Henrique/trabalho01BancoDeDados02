@@ -2,14 +2,14 @@
 
 ## 📖 Descrição do Projeto
 
-Este repositório contém um serviço de API RESTful para gerenciamento de dados, implementado com **FastAPI** e utilizando o **DynamoDB** (localmente) para persistência. O sistema implementa um rigoroso modelo de **Controle de Acesso Baseado em Papéis (RBAC - Role-Based Access Control)** para proteger os endpoints e os recursos de dados (tabelas).
+Este repositório contém um serviço de API RESTful para gerenciamento de dados, implementado com **FastAPI** e utilizando o **DynamoDB** (localmente) para persistência. O sistema implementa um modelo de **Controle de Acesso Baseado em Papéis (RBAC - Role-Based Access Control)** para proteger os endpoints e os recursos de dados (tabelas).
 
 ### 🔑 Funcionalidades Principais
 
 * **Autenticação JWT:** Geração e validação de tokens JWT para login seguro.
 * **Autorização Dinâmica:** Validação de permissões (`table:action`, ex.: `customer:read`) baseada no papel do usuário, consultadas diretamente nas tabelas de configuração (`roles`).
 * **Tabelas de Configuração:** Gerenciamento isolado das tabelas sensíveis (`users` e `roles`).
-* **Testes de Segurança:** Suíte completa de testes de integração (`pytest`) para matrizes de autorização (22 testes).
+* **Testes de Segurança:** Suíte completa de testes de integração (`pytest`) para matrizes de autorização (36 testes).
 
 ---
 
@@ -20,7 +20,7 @@ Para iniciar o ambiente, você precisará ter o **Docker** e o **Docker Compose*
 ### 1. Inicialização do Ambiente
 
 O arquivo `docker-compose.yml` inicia a API (`auth-api`) e uma instância local do DynamoDB (DynamoDB Local) com o setup inicial de dados (usuários e papéis).
-TODO:: fazer o init somente dar post no primeiro build
+
 
 ```bash
 docker-compose up --build -d
@@ -33,36 +33,18 @@ Verifique se os contêineres estão rodando:
 docker ps
 ```
 
-- A API estará acessível em http://localhost:8080.
-- A documentação interativa da API (Swagger UI) está em http://localhost:8080/docs. TODO:: retirar?
+- A versão admin estará acessível em http://localhost:8001.
+![Captura de tela do painel admin, permitindo CRUDE em todas as tabelas](./imagensReadme/documentacaoApi.png")
+
+- A documentação interativa da API (Swagger UI) está em http://localhost:8080/docs.
+
+![Captura de tela da documentação interativa](./imagensReadme/documentacaoApi.png")
 
 ### 3. Acessar Logs da API
 Para acompanhar o funcionamento da API em tempo real:
 
 ```bash
 docker logs -f auth-api
-```
-
-## 🧪 Instruções de Uso e Testes (Pytest)
-
-### 1. Executando a Suíte de Testes
-Execute a suíte completa de testes de integração dentro do contêiner da API. Estes testes validam todas as permissões (**users**, **roles**) e restrições de acesso.
-
-```
-docker exec auth-api sh -c "python -m pytest /app/test_auth.py"
-```
-#### Saída Esperada: TODO:: verificar versoes das bibliotecas
-
-```
-============================= test session starts ==============================
-platform linux -- Python 3.10.19, pytest-9.0.1, pluggy-1.6.0
-rootdir: /app
-plugins: anyio-4.11.0
-collected 36 items
-
-test_auth.py ....................................[100%]
-
-============================== 36 passed in 1.21s ==============================
 ```
 
 ## 🔐 Exemplos de Autenticação e Privilégios (CURL)
@@ -75,24 +57,31 @@ Use os tokens obtidos no endpoint **/login** para acessar os recursos protegidos
 | **writer** | `writer1` | `WriterPass1` | `write`, `update`, `delete`, `read` | Nenhuma (`403 Forbidden`) |
 | **reader** | `reader1` | `ReaderPass1` | `read` | Nenhuma (`403 Forbidden`) |
 
-## 0. Uso do login e export para facilitar execução dos exemplos
-### 0.1 Execute o login
+## 1. Container da API com autorização
+Execute o comando a seguir para entrar no container da API para realização dos testes.
+
+```
+docker exec -it auth-api sh
+```
+
+## 2. Uso do login e export para facilitar execução dos exemplos
+### 2.1 Execute o login
 ```
 curl -X POST "http://localhost:8080/login" \
      -H "Content-Type: application/json" \
      -d '{"username": "reader2", "password": "ReaderPass2"}'
 ```
-### Resposta:
+#### Resposta:
 ```
 {"access_token":"eyJhbGciO.....","token_type":"bearer"}
 ```
-### 0.2 Utilize export
+### 2.2 Utilize export
 Use export para facilitar reuso do token de acesso nos testes. **OBS:Deve ser executado a cada login**
 ```
 export AUTH_TOKEN="eyJhbGciO....."
 ```
 
-## 1. Exemplos de leitura pelo **reader** (tabela customer)
+## 3. Exemplos do **reader**
 
 ### Reader - Login
 ```
@@ -126,7 +115,7 @@ curl -X POST "http://localhost:8080/api/customer/item" \
 {"detail":"Usuário não autorizado: Necessária permissão 'customer:write'."}
 ```
 
-## 2. Exemplos do **writer** (GET, POST, UPDATE, DELETE) na tabela customer
+## 4. Exemplos do **writer** (GET, POST, UPDATE, DELETE)
 
 ### Writer - Login
 ```
@@ -191,7 +180,7 @@ curl -X GET "http://localhost:8080/api/customer/item?key=customer_name&key_value
 ```
 
 
-## 3. Writer tentando acessar users e roles (NEGADO)
+## 5. Exemplos do **writer** — Tabelas sensíveis (users e roles)
 
 ### Users
 ```
@@ -213,7 +202,7 @@ curl -X GET "http://localhost:8080/api/roles/item?key=role_name&key_value=admin1
 {"detail":"Usuário não autorizado: Necessária permissão 'roles:read'."}
 ```
 
-## 4. Exemplos do **admin** — POST nas tabelas users e roles
+## 6. Exemplos do **admin** — POST nas tabelas users e roles
 
 ### Login
 ```
@@ -255,4 +244,27 @@ curl -X GET "http://localhost:8080/api/roles/item?key=role_name&key_value=audito
 #### Resposta:
 ```
 {"role_name":"auditor","permissions":["customer:read"]}
+```
+
+## 🧪 Instruções de Uso e Testes (Pytest)
+
+### 1. Executando a Suíte de Testes
+Execute a suíte completa de testes de integração dentro do contêiner da API. Estes testes validam todas as permissões de crude, além da permissão das tabelas sensíveis que representam as restrições de acesso (**users**, **roles**).
+
+```
+docker exec auth-api sh -c "python -m pytest /app/test_auth.py"
+```
+#### Saída Esperada:
+
+```
+============================= test session starts ==============================
+platform linux -- Python 3.10.19, pytest-9.0.1, pluggy-1.6.0
+rootdir: /app
+plugins: anyio-4.11.0
+collected 36 items
+
+test_auth.py ....................................                     
+   [100%]
+
+============================== 36 passed in 1.38s ==============================
 ```

@@ -2,7 +2,7 @@
 set -e
 
 # Scripts
-CREATE_TABLE_SCRIPT="/home/dynamodblocal/init/scripts/init_tables.sh"
+CREATE_TABLE_SCRIPT="/home/dynamodblocal/init/scripts/create_tables.sh"
 CLEAN_TABLE_SCRIPT="/home/dynamodblocal/init/scripts/clean_db.sh"
 
 # Inicia o DynamoDB em background
@@ -22,5 +22,7 @@ fi
 # Executa script de criação de tabelas
 bash $CREATE_TABLE_SCRIPT
 
+echo " "
+echo "Inicializacao finalizada!"
 # Mantém o processo principal em foreground
 wait

@@ -39,9 +39,8 @@ services:
         ports:
             - "8080:8080"
         environment:
-            # Endpoint para conectar-se ao DynamoDB Local DENTRO da rede Docker
             DYNAMODB_ENDPOINT: "http://dynamodb-local:8000"
-            JWT_SECRET_KEY: "seu-segredo-super-secreto" # Chave para assinar o JWT
+            JWT_SECRET_KEY: "seu-segredo-super-secreto"
             AWS_REGION: "us-west-2"
         depends_on:
             - dynamodb-local

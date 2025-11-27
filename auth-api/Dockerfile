@@ -5,6 +5,7 @@ WORKDIR /app
 # Instala dependências
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+RUN apt-get update && apt-get install -y curl
 
 # Copia o código da aplicação
 COPY main.py .
