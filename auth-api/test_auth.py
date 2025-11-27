@@ -128,5 +128,84 @@ def test_authorization_matrix(tokens, role, method, status_code):
 		response = client.request(method, url, json=data, params=params)
 
 	assert response.status_code == status_code
-    # Se você quiser um detalhe mínimo, pode usar:
-    # assert response.status_code == status_code, f"Papel {role} com {method} falhou. Detalhe: {response.text}"
+	# Se você quiser um detalhe mínimo, pode usar:
+	# assert response.status_code == status_code, f"Papel {role} com {method} falhou. Detalhe: {response.text}"
+
+# Novo dado de teste para tabelas sensíveis
+SENSITIVE_DATA = {
+	"users": {
+		"POST": {"key": {"username": "TestSensitiveUser"}, "attributes": {"password_hash": "...", "role": ["reader"]}},
+		"GET_KEY": {"key": "username", "key_value": "TestSensitiveUser"}
+	},
+	"roles": {
+		"POST": {"key": {"role_name": "TestSensitiveRole"}, "attributes": {"permissions": ["table:read"]}},
+		"GET_KEY": {"key": "role_name", "key_value": "TestSensitiveRole"}
+	}
+}
+
+@pytest.mark.parametrize("role, method, status_code, table", [
+	# Reader em Tabelas Sensíveis (DEVE ser negado, 403)
+	("reader", "POST", 403, "users"),
+	("reader", "PUT", 403, "users"),
+	("reader", "GET", 403, "users"),
+	("reader", "DELETE", 403, "users"),
+	##
+	("reader", "POST", 403, "roles"),
+	("reader", "PUT", 403, "roles"),
+	("reader", "GET", 403, "roles"),
+	("reader", "DELETE", 403, "roles"),
+
+	# Writer em Tabelas Sensíveis (DEVE ser negado, 403)
+	("writer", "POST", 403, "users"),
+	("writer", "PUT", 403, "users"),
+	("writer", "GET", 403, "users"),
+	("writer", "DELETE", 403, "users"),
+	##
+	("writer", "POST", 403, "roles"),
+	("writer", "PUT", 403, "roles"),
+	("writer", "GET", 403, "roles"),
+	("writer", "DELETE", 403, "roles"),
+
+	# Admin em Tabelas Sensíveis (DEVE ser permitido, 200)
+	("admin", "POST", 200, "users"),
+	("admin", "PUT", 200, "users"),
+	("admin", "GET", 200, "users"),
+	("admin", "DELETE", 200, "users"),
+	##
+	("admin", "POST", 200, "roles"),
+	("admin", "PUT", 200, "roles"),
+	("admin", "GET", 200, "roles"),
+	("admin", "DELETE", 200, "roles"),
+])
+def test_sensitive_table_access(tokens, role, method, status_code, table):
+	""" Testa se apenas o ADMIN pode acessar as tabelas users e roles. """
+	
+	token = tokens[role]
+	headers = {"Authorization": f"Bearer {token}"}
+	
+	# URL aponta para a tabela sensível
+	url = f"{BASE_URL}/api/{table}/item"
+	data = None
+	params = None
+	
+	# Simula dados de corpo para POST/PUT, se necessário
+	if method == "POST" or method == "PUT":
+		# Usa o payload de POST/PUT se a tabela for users ou roles
+		# Note: DUMMY_DATA é para 'customer', use SENSITIVE_DATA aqui
+		if table in SENSITIVE_DATA and "POST" in SENSITIVE_DATA[table]:
+			data = SENSITIVE_DATA[table]["POST"]
+		else:
+			data = DUMMY_DATA # Fallback, mas deve ser evitado
+	elif method == "GET" or method == "DELETE":
+		# Usa os Query Params corretos para cada tabela
+		if table in SENSITIVE_DATA and "GET_KEY" in SENSITIVE_DATA[table]:
+			params = SENSITIVE_DATA[table]["GET_KEY"]
+		else:
+			params = {"key": "name", "key_value": "test_sensitive"} # Fallback
+		
+	with httpx.Client(headers=headers, timeout=5) as client:
+		response = client.request(method, url, json=data, params=params)
+
+	assert response.status_code == status_code, \
+		f"Falha: Papel {role} com {method} na tabela '{table}' retornou {response.status_code}, esperado {status_code}. Detalhe: {response.text}"
+
