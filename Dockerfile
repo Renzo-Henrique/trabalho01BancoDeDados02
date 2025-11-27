@@ -16,7 +16,6 @@ COPY init /home/dynamodblocal/init
 RUN chmod +x /home/dynamodblocal/init/scripts/entrypoint.sh
 RUN chmod +x /home/dynamodblocal/init/scripts/create_tables.sh
 RUN chmod +x /home/dynamodblocal/init/scripts/init_tables.sh
-RUN chmod +x /home/dynamodblocal/init/scripts/clean_db.sh
 
 ENTRYPOINT ["sh", "./init/scripts/entrypoint.sh"]
 

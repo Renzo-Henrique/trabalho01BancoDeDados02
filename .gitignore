@@ -3,6 +3,8 @@ node_modules/
 npm-debug.log
 
 # Python
+/auth_Module/__pycache__/
+/auth_Module/*.pyc
 __pycache__/
 *.pyc
 

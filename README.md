@@ -21,6 +21,8 @@ docker volume rm -f $(docker volume ls -q)
 docker image prune -a -f
 
 
+# testando
+docker exec -it dynamodb-local /bin/bash
 
 
 
