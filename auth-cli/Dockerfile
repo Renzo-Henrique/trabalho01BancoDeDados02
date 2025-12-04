@@ -5,12 +5,11 @@ WORKDIR /app
 # Instala dependências
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-RUN apt-get update && apt-get install -y curl
+RUN apt-get update
 
 # Copia o código da aplicação
 COPY main.py .
 COPY test_auth.py .
-COPY auth_cli.py .
 
 # Comando de execução da API
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["tail", "-f", "/dev/null"]

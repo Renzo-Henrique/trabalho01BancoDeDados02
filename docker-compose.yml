@@ -34,10 +34,8 @@ services:
         ports:
             - "8001:8001"
     auth-api:
-        build: ./auth-api
-        container_name: auth-api
-        ports:
-            - "8080:8080"
+        build: ./auth-cli
+        container_name: auth-cli
         environment:
             DYNAMODB_ENDPOINT: "http://dynamodb-local:8000"
             JWT_SECRET_KEY: "seu-segredo-super-secreto"
