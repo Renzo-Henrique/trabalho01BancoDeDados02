@@ -1,205 +1,231 @@
-import httpx
 import pytest
+import subprocess
+import os
+import re
 
-# URL base da sua API
-BASE_URL = "http://localhost:8080"
-LOGIN_URL = f"{BASE_URL}/login"
-TEST_TABLE = "customer" # Tabela de teste padrão para permissões gerais de crude
+# Caminho para o script CLI dentro do container
+CLI_PATH = "/app/auth_cli.py"
 
-# Credenciais dos usuários (Use as credenciais reais do seu DynamoDB Local)
+# Credenciais dos usuários (As mesmas usadas na CLI)
 USERS = {
 	"reader": {"username": "reader1", "password": "ReaderPass1"},
 	"writer": {"username": "writer1", "password": "WriterPass1"},
 	"admin": {"username": "admin1", "password": "AdminPass1"},
 }
 
-# --- Fixtures para Tokens ---
+# Dados de teste para CRUD na tabela 'customer'
+TEST_TABLE = "customer"
 
-@pytest.fixture(scope="session")
-def tokens():
-	"""
-	Fixture que realiza o login para todos os usuários definidos em USERS 
-	e armazena seus tokens JWT para uso em todos os testes da sessão.
-	
-	Returns:
-		dict: Um dicionário onde a chave é o papel ('reader', 'writer', 'admin') e o valor é o token JWT.
-	"""
-	user_tokens = {}
-	for role, creds in USERS.items():
-		# Usa httpx para enviar a requisição POST de login
-		response = httpx.post(
-			LOGIN_URL, 
-			# Usa 'json=' para enviar o corpo JSON, correspondendo ao modelo Pydantic UserLogin da APIjson={"username": creds["username"], "password": creds["password"]} 
-			json={"username": creds["username"], "password": creds["password"]}
-		)
-			
-		response.raise_for_status() # Levanta exceção para status 4xx (client side) ou 5xx (server side)
-		token_data = response.json()
-		user_tokens[role] = token_data["access_token"]
-	return user_tokens
+# --- Dados de Teste: Entrada e Verificação ---
 
-# Dados de teste para POST/PUT
-DUMMY_DATA = {
-	"key": {"customer_name": "TestUser"},
-	"attributes": {"customer_street": "TestStreet", "customer_city":"TestCity"},
+# Define os comandos PartiQL e as verificações esperadas
+# (comando, resultado_esperado_no_output, tipo_de_tabela)
+
+# Comandos de CRUD
+CRUD_COMMANDS = {
+	"read": f"SELECT * FROM {TEST_TABLE} WHERE customer_name='TestUser'",
+	"write": f"INSERT INTO {TEST_TABLE} VALUE {{'customer_name':'TestUser', 'customer_city':'CLI-City'}}",
+	"update": f"UPDATE {TEST_TABLE} SET customer_city='CLI-Updated' WHERE customer_name='TestUser'",
+	"delete": f"DELETE FROM {TEST_TABLE} WHERE customer_name='TestUser'",
 }
 
-
-@pytest.fixture(scope="module", autouse=True)
-def setup_test_item(tokens):
-	""" 
-	Fixture que garante que o item de teste 'TestUser' exista antes de executar 
-	os testes do módulo e o remove após a conclusão (limpeza/teardown).
-	
-	Args:
-		tokens (dict): Fixture contendo os tokens JWT.
-	
-	Yields:
-		None: Executa os testes entre o SETUP e o TEARDOWN.
-	"""
-	admin_token = tokens["admin"] 
-	headers = {"Authorization": f"Bearer {admin_token}"}
-	url = f"{BASE_URL}/api/{TEST_TABLE}/item"
-	
-	# SETUP: Cria o item para que os GETs e DELETEs subsequentes funcionem
-	print("\n[SETUP] Criando item de teste (TestUser)...")
-	
-	# Tenta criar (POST) o item usando o token de Admin
-	response_post = httpx.post(url, json=DUMMY_DATA, headers=headers)
-	
-	if response_post.status_code not in [200, 201]:
-		print(f"[AVISO] Falha ao criar item de teste. Status: {response_post.status_code}. Detalhe: {response_post.text}")
-		
-	# Executa todos os testes do módulo
-	yield
-	
-	# TEARDOWN: Remove o item após a execução de todos os testes
-	print("\n[TEARDOWN] Removendo item de teste (TestUser)...")
-	
-	# Delete usa parâmetros de query para a chave
-	params_delete = {"key": "customer_name", "key_value": "TestUser"}
-	response_delete = httpx.delete(url, params=params_delete, headers=headers)
-	
-	if response_delete.status_code not in [200, 204]:
-		print(f"[AVISO] Falha ao remover item de teste. Status: {response_delete.status_code}. Detalhe: {response_delete.text}")
-	else:
-		print("[TEARDOWN] Limpeza concluída.")
-
-@pytest.mark.parametrize("role, method, status_code", [
-	# 1. Testes do Papel READER (Deve ter acesso de leitura na tabela customer)("reader", "PUT", 403),
-	("reader", "POST", 403),
-	("reader", "PUT", 403),
-	("reader", "GET", 200),
-	("reader", "DELETE", 403),
-
-	# 2. Testes do Papel WRITER (Deve ter acesso total na tabela customer)
-	("writer", "POST", 200),
-	("writer", "PUT", 200),
-	("writer", "GET", 200),
-	("writer", "DELETE", 200),
-
-	# 3. Testes do Papel ADMIN (Acesso total via Coringa '*')
-	("admin", "POST", 200),
-	("admin", "PUT", 200),
-	("admin", "GET", 200),
-	("admin", "DELETE", 200),
-])
-def test_authorization_matrix(tokens, role, method, status_code):
-	""" 
-	Testa se cada papel de usuário recebe o status code esperado para cada método 
-	HTTP crude na tabela de teste padrão ('customer').
-	"""
-	token = tokens[role]
-	headers = {"Authorization": f"Bearer {token}"}
-
-	url = f"{BASE_URL}/api/{TEST_TABLE}/item"
-	data = None
-	params = None
-
-	if method == "GET" or method == "DELETE":
-		# GET e DELETE usam Query Params para a chave do item
-		params = {"key": "customer_name", "key_value": "TestUser"}
-	elif method == "POST" or method == "PUT":
-		# POST e PUT usam corpo JSON
-		data = DUMMY_DATA
-	
-	# Executa a requisição
-	with httpx.Client(headers=headers, timeout=5) as client:
-		response = client.request(method, url, json=data, params=params)
-
-	assert response.status_code == status_code
-	
-# Dados de teste para tabelas sensíveis (users e roles)
-SENSITIVE_DATA = {
+# Comandos para Tabelas Sensíveis
+SENSITIVE_COMMANDS = {
 	"users": {
-		"POST": {"key": {"username": "TestSensitiveUser"}, "attributes": {"password_hash": "...", "role": ["reader"]}},
-		"GET_KEY": {"key": "username", "key_value": "TestSensitiveUser"}
+		"read": "SELECT username FROM users",
+		"write": "INSERT INTO users VALUE {'username':'TestCLINewUser', 'password':'...'}",
+		"update": "UPDATE users SET password='UpdatedPwd' WHERE username='TestCLINewUser'",
+		"delete": "DELETE FROM users WHERE username='TestCLINewUser'"
 	},
 	"roles": {
-		"POST": {"key": {"role_name": "TestSensitiveRole"}, "attributes": {"permissions": ["table:read"]}},
-		"GET_KEY": {"key": "role_name", "key_value": "TestSensitiveRole"}
+		"read": "SELECT role_name FROM roles",
+		"write": "INSERT INTO roles VALUE {'role_name':'TestCLINewRole', 'permissions':['loan:read']}",
+		"update": "UPDATE roles SET permissions=list_append(permissions, ['account:read']) WHERE role_name='TestCLINewRole'",
+		"delete": "DELETE FROM roles WHERE role_name='TestCLINewRole'"
 	}
 }
 
-@pytest.mark.parametrize("role, method, status_code, table", [
-	# Reader em Tabelas Sensíveis (DEVE ser negado, 403)
-	("reader", "POST", 403, "users"),
-	("reader", "PUT", 403, "users"),
-	("reader", "GET", 403, "users"),
-	("reader", "DELETE", 403, "users"),
-	##
-	("reader", "POST", 403, "roles"),
-	("reader", "PUT", 403, "roles"),
-	("reader", "GET", 403, "roles"),
-	("reader", "DELETE", 403, "roles"),
 
-	# Writer em Tabelas Sensíveis (DEVE ser negado, 403)
-	("writer", "POST", 403, "users"),
-	("writer", "PUT", 403, "users"),
-	("writer", "GET", 403, "users"),
-	("writer", "DELETE", 403, "users"),
-	##
-	("writer", "POST", 403, "roles"),
-	("writer", "PUT", 403, "roles"),
-	("writer", "GET", 403, "roles"),
-	("writer", "DELETE", 403, "roles"),
-
-	# Admin em Tabelas Sensíveis (DEVE ser permitido, 200)
-	("admin", "POST", 200, "users"),
-	("admin", "PUT", 200, "users"),
-	("admin", "GET", 200, "users"),
-	("admin", "DELETE", 200, "users"),
-	##
-	("admin", "POST", 200, "roles"),
-	("admin", "PUT", 200, "roles"),
-	("admin", "GET", 200, "roles"),
-	("admin", "DELETE", 200, "roles"),
-])
-def test_sensitive_table_access(tokens, role, method, status_code, table):
-	""" 
-	Testa se apenas o ADMIN (que tem o coringa '*') pode acessar as tabelas 
-	sensíveis 'users' e 'roles', confirmando que Reader e Writer são negados (403).
+def run_cli_test_sequence(username, password, commands):
 	"""
-	token = tokens[role]
-	headers = {"Authorization": f"Bearer {token}"}
+	Executa o auth_cli.py como um subprocesso, fornecendo entrada (login + comandos) 
+	e retornando a saída.
 	
-	# URL aponta para a tabela sensível
-	url = f"{BASE_URL}/api/{table}/item"
-	data = None
-	params = None
+	Args:
+		username (str): Usuário para login.
+		password (str): Senha para login.
+		commands (list): Lista de comandos PartiQL a serem executados.
+
+	Returns:
+		str: Toda a saída (stdout) do processo.
+	"""
+	# Combina login, comandos e 'exit'
+	input_sequence = [username, password] + commands + ['exit']
+	input_str = "\n".join(input_sequence) + "\n"
+
+	# Usa o 'subprocess.run' para executar o script e capturar a saída
+	try:
+		result = subprocess.run(
+			# O binário python pode estar em '/usr/bin/python' ou 'python'
+			# Use 'python' para que o sistema use o PATH do container:
+			["python", CLI_PATH], 
+			input=input_str, # <--- ENVIE APENAS A STRING
+			capture_output=True,
+			text=True, # text=True significa que a entrada (input) é esperada como string, e a saída (stdout/stderr) será decodificada para string.
+			check=False,
+			timeout=10 
+		)
+		return result.stdout.strip()
+	except subprocess.TimeoutExpired:
+		return "TIMEOUT_EXPIRED"
+	except FileNotFoundError:
+		# Se o pytest não estiver rodando no ambiente correto (container)
+		return f"ERROR: CLI script not found at {CLI_PATH}"
+
+
+# --- Fixture de Setup/Teardown para o Item de Teste ---
+
+@pytest.fixture(scope="module", autouse=True)
+def setup_test_item_cli():
+	""" 
+	Garante que o item de teste 'TestUser' exista antes do módulo de teste 
+	e o remove após (usando o papel admin).
+	"""
+	admin_creds = USERS["admin"]
 	
-	# Configura dados/parâmetros baseados no método e na tabela
-	if method == "POST" or method == "PUT":
-		# Usa o payload de POST/PUT do SENSITIVE_DATA
-		data = SENSITIVE_DATA[table]["POST"]
+	# 1. SETUP: Criar item de teste (Para testes de GET e DELETE)
+	setup_commands = [
+		CRUD_COMMANDS["write"] # Usa o comando INSERT (write)
+	]
+	print("\n[SETUP CLI] Criando item de teste (TestUser)...")
+	run_cli_test_sequence(admin_creds["username"], admin_creds["password"], setup_commands)
+	
+	yield # Executa os testes do módulo
+	
+	# 2. TEARDOWN: Remover item de teste
+	teardown_commands = [
+		CRUD_COMMANDS["delete"] # Usa o comando DELETE
+	]
+	print("\n[TEARDOWN CLI] Removendo item de teste (TestUser)...")
+	run_cli_test_sequence(admin_creds["username"], admin_creds["password"], teardown_commands)
+	print("[TEARDOWN CLI] Limpeza concluída.")
 
-	elif method == "GET" or method == "DELETE":
-		# Usa os Query Params corretos para cada tabela
-		params = SENSITIVE_DATA[table]["GET_KEY"]
-		
-	with httpx.Client(headers=headers, timeout=5) as client:
-		response = client.request(method, url, json=data, params=params)
 
-	assert response.status_code == status_code, \
-		f"Falha: Papel {role} com {method} na tabela '{table}' retornou {response.status_code}, esperado {status_code}. Detalhe: {response.text}"
+# --- 2. Teste da Matriz de Autorização (CRUD) ---
 
+@pytest.mark.parametrize("role, action, expected_status", [
+	# 1. Papel READER (Permite apenas read)
+	("reader", "read", "Autorizado"),
+	("reader", "write", "ERRO DE AUTORIZAÇÃO"),
+	("reader", "update", "ERRO DE AUTORIZAÇÃO"),
+	("reader", "delete", "ERRO DE AUTORIZAÇÃO"),
+
+	# 2. Papel WRITER (Permite CRUD)
+	("writer", "read", "Autorizado"),
+	("writer", "write", "Autorizado"),
+	("writer", "update", "Autorizado"),
+	("writer", "delete", "Autorizado"),
+
+	# 3. Papel ADMIN (Permite CRUD via coringa)
+	("admin", "read", "Autorizado"),
+	("admin", "write", "Autorizado"),
+	("admin", "update", "Autorizado"),
+	("admin", "delete", "Autorizado"),
+])
+def test_authorization_matrix_cli(role, action, expected_status):
+	""" Testa se cada papel recebe a mensagem de Autorizado ou ERRO DE AUTORIZAÇÃO esperada. """
+	creds = USERS[role]
+	command = CRUD_COMMANDS[action]
+	
+	# Executa a sequência de login e comando
+	output = run_cli_test_sequence(creds["username"], creds["password"], [command])
+	
+	# Verifica se a mensagem de status esperada está presente na saída
+	assert expected_status in output, \
+		f"Falha: Papel {role} com ação '{action}' (Comando: '{command}') falhou. \nOutput completo:\n{output}"
+
+# --- 3. Teste de Acesso a Tabelas Sensíveis ---
+
+@pytest.mark.parametrize("role, action, table, expected_status", [
+	# 1. Reader em Tabelas Sensíveis (DEVE ser negado - 403)
+	("reader", "read", "users", "ERRO DE AUTORIZAÇÃO"),
+	("reader", "write", "users", "ERRO DE AUTORIZAÇÃO"),
+	("reader", "update", "users", "ERRO DE AUTORIZAÇÃO"),
+	("reader", "delete", "users", "ERRO DE AUTORIZAÇÃO"),
+	##
+	("reader", "read", "roles", "ERRO DE AUTORIZAÇÃO"),
+	("reader", "write", "roles", "ERRO DE AUTORIZAÇÃO"),
+	("reader", "update", "roles", "ERRO DE AUTORIZAÇÃO"),
+	("reader", "delete", "roles", "ERRO DE AUTORIZAÇÃO"),
+
+	# 2. Writer em Tabelas Sensíveis (DEVE ser negado - 403)
+	("writer", "read", "users", "ERRO DE AUTORIZAÇÃO"),
+	("writer", "write", "users", "ERRO DE AUTORIZAÇÃO"),
+	("writer", "update", "users", "ERRO DE AUTORIZAÇÃO"),
+	("writer", "delete", "users", "ERRO DE AUTORIZAÇÃO"),
+	##
+	("writer", "read", "roles", "ERRO DE AUTORIZAÇÃO"),
+	("writer", "write", "roles", "ERRO DE AUTORIZAÇÃO"),
+	("writer", "update", "roles", "ERRO DE AUTORIZAÇÃO"),
+	("writer", "delete", "roles", "ERRO DE AUTORIZAÇÃO"),
+	
+	# 3. Admin em Tabelas Sensíveis (DEVE ser permitido - 200)
+	("admin", "read", "users", "Autorizado"),
+	("admin", "write", "users", "Autorizado"),
+	("admin", "update", "users", "Autorizado"),
+	("admin", "delete", "users", "Autorizado"),
+	##
+	("admin", "read", "roles", "Autorizado"),
+	("admin", "write", "roles", "Autorizado"),
+	("admin", "update", "roles", "Autorizado"),
+	("admin", "delete", "roles", "Autorizado"),
+])
+# Trecho da função test_sensitive_table_access_cli (Ajustado)
+
+def test_sensitive_table_access_cli(role, action, table, expected_status):
+	creds = USERS[role]
+	
+	# 1. SETUP: Se a ação for UPDATE ou DELETE, garantimos que o item exista (APENAS com Admin)
+	setup_commands = []
+	if role == "admin" and (action == "update" or action == "delete"):
+		# Se for admin, precisamos do item antes de tentar atualizar/deletar
+		admin_creds = USERS["admin"]
+		setup_commands = [SENSITIVE_COMMANDS[table]["write"]]
+		# Executa o setup de criação de item
+		run_cli_test_sequence(admin_creds["username"], admin_creds["password"], setup_commands)
+
+	# 2. EXECUÇÃO DO COMANDO PRINCIPAL
+	command = SENSITIVE_COMMANDS[table][action] 
+	
+	# 3. TEARDOWN: Adiciona comandos de cleanup para o Admin (write, update e delete criam/modificam)
+	cleanup_commands = []
+	# Se o admin executou write/update/delete com sucesso, ou se a ação principal for delete,
+	# garantimos que o item seja removido
+	if role == "admin":
+		if action in ["write", "update"]:
+			# Se criou/atualizou, deleta no final
+			cleanup_commands = [SENSITIVE_COMMANDS[table]["delete"]]
+		elif action == "delete":
+			# Se a ação principal era delete, precisamos recriar e deletar de novo no teardown.
+			# No entanto, a forma mais simples é deixar a recriação para o próximo teste de 'write'
+			# e focar que a execução foi Autorizada/Negada.
+			pass
+
+	# Executa a sequência de login, comando e cleanup (se for admin/write/update)
+	output = run_cli_test_sequence(creds["username"], creds["password"], [command] + cleanup_commands)
+	
+	assert expected_status in output, \
+		f"Falha: Papel {role} com ação '{action}' na tabela '{table}' falhou. \nOutput completo:\n{output}"
+	
+# --- 4. Teste de Autenticação Inválida ---
+def test_invalid_login_cli():
+	""" Testa se o login falha com credenciais inválidas. """
+	username = "nonexistentuser"
+	password = "wrongpassword"
+	
+	# Executa o login com credenciais falsas
+	output = run_cli_test_sequence(username, password, ["SELECT * FROM customer"])
+	
+	# A mensagem de falha de autenticação deve estar presente
+	assert "Autenticação falhou: Usuário ou senha inválidos." in output
+	assert "✅ Autenticado" not in output
