@@ -1,17 +1,49 @@
-# 🛡️ Sistema de Autenticação e Autorização (RBAC) com FastAPI e DynamoDB
+# 🛡️ Sistema de Autenticação e Autorização (RBAC) com DynamoDB local
 
 ## 📖 Descrição do Projeto
 
-Este repositório contém um serviço de API RESTful para gerenciamento de dados, implementado com **FastAPI** e utilizando o **DynamoDB** (localmente) para persistência. O sistema implementa um modelo de **Controle de Acesso Baseado em Papéis (RBAC - Role-Based Access Control)** para proteger os endpoints e os recursos de dados (tabelas).
+Este repositório contém um serviço para gerenciamento de dados, utilizando o **DynamoDB** (localmente) para persistência. O sistema implementa um modelo de **Controle de Acesso Baseado em Papéis (RBAC - Role-Based Access Control)**, incluindo autenticação, autorização e verificação de privilégios sobre operações AWS CLI.
+
+O objetivo é simular, em ambiente local, um controle de acesso semelhante ao IAM da AWS, permitindo:
+
+- Usuários com login e senha
+- Papéis (roles) com permissões definidas
+- Autorização antes da execução de qualquer operação DynamoDB
+- Auditoria e bloqueio de ações não autorizadas
 
 ### 🔑 Funcionalidades Principais
 
-* **Autenticação JWT:** Geração e validação de tokens JWT para login seguro.
 * **Autorização Dinâmica:** Validação de permissões (`table:action`, ex.: `customer:read`) baseada no papel do usuário, consultadas diretamente nas tabelas de configuração (`roles`).
 * **Tabelas de Configuração:** Gerenciamento isolado das tabelas sensíveis (`users` e `roles`).
-* **Testes de Segurança:** Suíte completa de testes de integração (`pytest`) com 37 casos de teste que validam toda a matriz de autorização (CRUD e acesso sensível) para API e CLI.
+* **Testes de Segurança:** Suíte completa de testes de integração (`pytest`) com 46 casos de teste que validam toda a matriz de autorização (CRUD e acesso sensível).
 
 ---
+
+### 🔍 Operações Disponíveis
+
+As tabelas abaixo resumem as operações suportadas e como são classificadas internamente para fins de autorização (mapeamento **table:action**):
+
+#### 1. Operações **CRUD**
+| Operação DynamoDB    | Sintaxe (CLI)  | Ação RBAC     | Descrição                                             |
+| -------------------- | --------------------------- | --------- | ----------------------------------------------------- |
+| **get-item**         | `dynamodb get-item`         | `read`   | Lê um item específico por chave primária.             |
+| **query**            | `dynamodb query`            | `read`    | Consulta por chave de partição com filtros opcionais. |
+| **scan**             | `dynamodb scan`             | `read`    | Varre a tabela inteira, retornando todos os itens.    |
+| **put-item**         | `dynamodb put-item`         | `write`   | Insere um novo item ou substitui um existente.        |
+| **update-item**      | `dynamodb update-item`      | `update`  | Atualiza atributos de um item existente.              |
+| **delete-item**      | `dynamodb delete-item`      | `delete`  | Remove um item da tabela.                             |
+| **batch-get-item**   | `dynamodb batch-get-item`   | `read`    | Lê múltiplos itens em lote.                           |
+| **batch-write-item** | `dynamodb batch-write-item` | `write`   | Insere ou remove múltiplos itens em lote.             |
+
+#### 2. Operações de Admin
+| Operação DynamoDB  | Sintaxe (CLI) | Ação RBAC  |Descrição  |
+| ------------------ | ------------------------- | ------------------------------------ | ---------------------------------------------------------- |
+| **create-table**   | `dynamodb create-table`   | `create` ou `table:create`           | Cria uma nova tabela no DynamoDB.                          |
+| **describe-table** | `dynamodb describe-table` | `describe` ou `table:describe`       | Obtém informações de estrutura, schema e status da tabela. |
+| **list-tables**    | `dynamodb list-tables`    | `list` ou `table:list`               | Lista todas as tabelas do banco.                           |
+| **update-table**   | `dynamodb update-table`   | `update_meta` ou `table:update_meta` | Altera metadados (índices, throughput, tags etc.).         |
+| **delete-table**   | `dynamodb delete-table`   | `delete_table` ou `table:delete`     | Remove permanentemente a tabela.                           |
+
 
 ## 🚀 Como Executar o Projeto Localmente
 
@@ -19,7 +51,7 @@ Para iniciar o ambiente, você precisará ter o **Docker** e o **Docker Compose*
 
 ### 1. Inicialização do Ambiente
 
-O arquivo `docker-compose.yml` inicia a API (`auth-api`) e uma instância local do DynamoDB (DynamoDB Local) com o setup inicial de dados (usuários e papéis).
+O arquivo `docker-compose.yml` inicia a API (`auth-cli`) e uma instância local do DynamoDB (DynamoDB Local) com o setup inicial de dados (usuários e papéis).
 
 
 ```bash
@@ -42,35 +74,24 @@ docker compose up --build
 |:---------------------------------:|
 | *Captura de tela da documentação interativa* |
 
-### 2. Acessar Logs da API
-Para acompanhar o funcionamento da API em tempo real:
 
-```bash
-docker logs -f auth-api
-```
-
-## 🔐 Exemplos de Autenticação e Privilégios
+## 🔐 Exemplos de Autenticação e Privilégios TODO:: consertar essa seção
 
 ### Papéis e Credenciais de Teste
 | Papel | Username | Senha | Permissões nas Tabelas de dados | Permissões nas tabelas `users`/`roles` |
 | :--- | :--- | :--- | :--- | :--- |
-| **admin** | `admin1` | `AdminPass1` | `*` (Acesso Total) | `*` (Acesso Total) |
-| **writer** | `writer1` | `WriterPass1` | `write`, `update`, `delete`, `read` | Nenhuma (`403 Forbidden`) |
-| **reader** | `reader1` | `ReaderPass1` | `read` | Nenhuma (`403 Forbidden`) |
+| **admin** | `admin1` | `123` | `*` (Acesso Total) | `*` (Acesso Total) |
+| **writer** | `writer1` | `123` | `write`, `update`, `delete`, `read` | Nenhuma (`403 Forbidden`) |
+| **reader** | `reader1` | `123` | `read` | Nenhuma (`403 Forbidden`) |
 
 ## 1. Container da API com autorização
-Execute o comando a seguir para entrar no container da API para realização dos testes.
+Execute o comando a seguir para entrar no container da API e executar o cliente para realização dos testes.
 
 ```
-docker exec -it auth-api bash
+docker exec -it auth-cli python3 main.py
 ```
 
-## 2. Execute o python com o autorizador
-```
-python3 auth_cli.py
-```
-
-Digite o login e senha que deseja testar
+Faça login e execute comandos DynamoDB conforme exemplo abaixo.
 
 
 | ![Captura de tela de um exemplo de execução](./imagensReadme/exemploExecucao.png) |
@@ -78,27 +99,31 @@ Digite o login e senha que deseja testar
 | *Captura de tela de um exemplo de execução* |
 
 
-Após login, os testes podem ser feitos a partir de consultas *Postgres*
+Após login, os testes podem ser feitos a partir de consultas na sintaxe *aws dynamodb*
 
 ## 3. Exemplos do **reader**
 
 
 ### Reader - GET
 ```
-SELECT * FROM branch WHERE branch_name = 'North Town'
+dynamodb get-item --table-name branch --key '{"branch_name": {"S": "North Town"}}'
 ```
 #### Resposta:
 ```
-{'branch_city': 'Rye', 'branch_name': 'North Town', 'assets': Decimal('3700000')}```
+   [Autorizado] Permissão 'branch:read' concedida. Executando 'get-item'...
+
+--- Resultado (Deserializado) ---
+{'branch_city': 'Rye', 'branch_name': 'North Town', 'assets': Decimal('3700000')}   
+----------------------------------
 ```
 ### Reader - POST proibido
 ```
-INSERT INTO customer VALUE {'customer_name': 'Bob', 'customer_city': 'London'}
+dynamodb put-item --table-name customer --item '{"customer_name":{"S":"TestUserCLI"}, "customer_city":{"S":"CLI-City"}}'
 ```
 #### Resposta:
 ```
-❌ ERRO DE AUTORIZAÇÃO: O usuário 'reader2' (papel: reader) não tem a permissão **'CUSTOMER:write'** necessária.
--------------------------------
+❌ ERRO DE AUTORIZAÇÃO: O usuário 'reader1' (papel: reader) não tem a permissão **'customer:write'** necessária.
+----------------------------------
 ```
 
 ## 4. Exemplos do **writer** (CRUDE)
@@ -106,51 +131,58 @@ INSERT INTO customer VALUE {'customer_name': 'Bob', 'customer_city': 'London'}
 
 ### Writer - Insert
 ```
-INSERT INTO customer VALUE {'customer_name': 'Bob', 'customer_city': 'London'}
+dynamodb put-item --table-name customer --item '{"customer_name":{"S":"TestUserCLI"}, "customer_city":{"S":"CLI-City"}}'
 ```
 
 
 ### Writer - GET
 ```
-SELECT * FROM customer WHERE customer_name = 'Bob'
+dynamodb get-item --table-name customer --key '{"customer_name": {"S": "TestUserCLI"}}'
 ```
 #### Resposta:
 ```
---- Resultados (Deserializados) ---
-{'customer_name': 'Bob', 'customer_city': 'London'}
+   [Autorizado] Permissão 'customer:read' concedida. Executando 'get-item'...
+
+--- Resultado (Deserializado) ---
+{'customer_name': 'TestUserCLI', 'customer_city': 'CLI-City'}
 ----------------------------------
 ```
 
 ### Writer - UPDATE
 ```
-UPDATE customer SET customer_city = 'Paris', customer_street = 'The French street' WHERE customer_name = 'Bob'
+dynamodb update-item --table-name customer --key '{"customer_name":{"S":"TestUserCLI"}}' --update-expression "SET customer_city = :c" --expression-attribute-values '{":c":{"S":"CLI-Updated"}}'
 
 ```
 
 ### Writer - GET
 ```
-SELECT * FROM customer WHERE customer_name = 'Bob'
+dynamodb get-item --table-name customer --key '{"customer_name": {"S": "TestUserCLI"}}'
 ```
 #### Resposta:
 ```
---- Resultados (Deserializados) ---
-{'customer_name': 'Bob', 'customer_city': 'Paris', 'customer_street': 'The French street'}
+   [Autorizado] Permissão 'customer:read' concedida. Executando 'get-item'...
+
+--- Resultado (Deserializado) ---
+{'customer_name': 'TestUserCLI', 'customer_city': 'CLI-Updated'}
 ----------------------------------
 ```
 
 ### Writer - DELETE
 ```
-DELETE FROM customer WHERE customer_name = 'Bob'
+dynamodb delete-item --table-name customer --key '{"customer_name":{"S":"TestUserCLI"}}'
+
 ```
 
 ### Writer - GET
 ```
-SELECT * FROM customer WHERE customer_name = 'Bob'
+dynamodb get-item --table-name customer --key '{"customer_name": {"S": "TestUserCLI"}}'
 ```
 #### Resposta:
 ```
---- Resultados (Deserializados) ---
-----------------------------------
+   [Autorizado] Permissão 'customer:read' concedida. Executando 'get-item'...
+
+✅ Comando executado com sucesso (sem retorno específico de item).
+
 ```
 
 
@@ -158,7 +190,7 @@ SELECT * FROM customer WHERE customer_name = 'Bob'
 
 ### Users
 ```
-SELECT * FROM users WHERE username = 'admin1'
+dynamodb get-item --table-name users --key '{"username": {"S": "reader1"}}'
 ```
 #### Resposta:
 ```
@@ -168,7 +200,7 @@ SELECT * FROM users WHERE username = 'admin1'
 
 ### Roles
 ```
-SELECT * FROM roles WHERE role_name = 'admin1'
+dynamodb get-item --table-name roles --key '{"role_name": {"S": "reader"}}'
 ```
 #### Resposta:
 ```
@@ -185,39 +217,39 @@ Execute a suíte completa de testes de integração dentro do contêiner da API.
 Esses testes tem como objetivo verificar se os papéis (**reader**, **writer** e **admin**) possuem as permissões corretas (READ, WRITE, UPDATE, DELETE) na tabela de dados padrão **customer** e nas tabelas sensíveis (**users** e **roles**), garantindo o correto funcionamento do módulo de autorização da **API*.
 
 ```
-docker exec auth-api sh -c "python -m pytest /app/test_auth.py"
+docker exec -it auth-cli pytest ./test_auth.py
 ```
 #### Saída Esperada:
 
 ```
-============================= test session starts ==============================
+=============================== test session starts ================================
 platform linux -- Python 3.10.19, pytest-9.0.1, pluggy-1.6.0
 rootdir: /app
 plugins: anyio-4.11.0
-collected 37 items
+collected 46 items                                                                 
 
-test_auth.py .....................................                       [100%]
+test_auth.py ..............................................                  [100%]
 
-============================== 37 passed in 8.64s ==============================
+================================ 46 passed in 0.07s ================================
 ```
 
-### Cobertura dos testes
+### Cobertura dos testes por tipo de operação
 
 #### Testes de Autorização na Tabela customer (CRUD)
 
-| Papel      | Ação   | Comando PartiQL             | Resultado Esperado    | Justificativa                            |
+| Papel      | Ação   | Resultado Esperado    | Justificativa                            |
 | ---------- | ------ | --------------------------- | --------------------- | ---------------------------------------- |
-| **reader** | read   | `SELECT * FROM customer...` | ✔ Autorizado          | reader possui `customer:read`.           |
-| **reader** | write  | `INSERT INTO customer...`   | ❌ Erro de Autorização | reader **não** possui `customer:write`.  |
-| **reader** | update | `UPDATE customer...`        | ❌ Erro de Autorização | reader **não** possui `customer:update`. |
-| **reader** | delete | `DELETE FROM customer...`   | ❌ Erro de Autorização | reader **não** possui `customer:delete`. |
-| **writer** | read   | `SELECT * FROM customer...` | ✔ Autorizado          | writer possui `customer:read`.           |
-| **writer** | write  | `INSERT INTO customer...`   | ✔ Autorizado          | writer possui `customer:write`.          |
-| **writer** | update | `UPDATE customer...`        | ✔ Autorizado          | writer possui `customer:update`.         |
-| **writer** | delete | `DELETE FROM customer...`   | ✔ Autorizado          | writer possui `customer:delete`.         |
-| **admin**  | read   | `SELECT * FROM customer...` | ✔ Autorizado          | admin possui coringa `*`.                |
-| **admin**  | write  | `INSERT INTO customer...`   | ✔ Autorizado          | admin possui coringa `*`.                |
-| **admin**  | update | `UPDATE customer...`        | ✔ Autorizado          | admin poss                               |
+| **reader** | read   | ✔ Autorizado          | reader possui `customer:read`.           |
+| **reader** | write  | ❌ Erro de Autorização | reader **não** possui `customer:write`.  |
+| **reader** | update | ❌ Erro de Autorização | reader **não** possui `customer:update`. |
+| **reader** | delete | ❌ Erro de Autorização | reader **não** possui `customer:delete`. |
+| **writer** | read   | ✔ Autorizado          | writer possui `customer:read`.           |
+| **writer** | write  | ✔ Autorizado          | writer possui `customer:write`.          |
+| **writer** | update | ✔ Autorizado          | writer possui `customer:update`.         |
+| **writer** | delete | ✔ Autorizado          | writer possui `customer:delete`.         |
+| **admin**  | read   | ✔ Autorizado          | admin possui coringa `*`.                |
+| **admin**  | write  | ✔ Autorizado          | admin possui coringa `*`.                |
+| **admin**  | update | ✔ Autorizado          | admin poss                               |
 
 #### Testes de Acesso às Tabelas Sensíveis (users e roles)
 

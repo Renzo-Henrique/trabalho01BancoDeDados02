@@ -4,6 +4,7 @@ import re
 import json
 from getpass import getpass
 from typing import List, Dict, Any, Tuple, Optional
+import shlex
 
 # 1. Configuração e Dependências
 try:
@@ -125,36 +126,12 @@ AWS_CLI_ACTION_MAP = {
 }
 
 def split_cli_command(command: str) -> List[str]:
-    """
-    Divide o comando CLI em tokens, respeitando aspas simples.
-    Ex: 'dynamodb put-item --table-name customer --item \'{...}\''
-    """
-    # Expressão regular para encontrar palavras (tokens), exceto dentro de aspas simples
-    # Usamos uma divisão mais simples aqui para fins de demonstração robusta:
-    tokens = []
-    # Tokeniza baseando em espaços, mas re-junta partes entre aspas simples
-    command_parts = command.split()
-    temp_token = ""
-    in_quotes = False
-    
-    for part in command_parts:
-        if in_quotes:
-            temp_token += " " + part
-            if part.endswith("'"):
-                tokens.append(temp_token.strip("'").strip())
-                temp_token = ""
-                in_quotes = False
-        else:
-            if part.startswith("'") and not part.endswith("'"):
-                in_quotes = True
-                temp_token = part
-            else:
-                tokens.append(part.strip("'"))
-                
-    if in_quotes: # Caso de aspas abertas no final
-        tokens.append(temp_token)
-        
-    return tokens
+    """Divide o comando em tokens de forma correta usando shlex."""
+    try:
+        return shlex.split(command)
+    except ValueError:
+        print("Erro ao analisar o comando: verifique aspas e sintaxe.")
+        return []
 
 def analisar_aws_cli_comando(command: str) -> Optional[Tuple[str, str, Dict[str, Any]]]:
     """
