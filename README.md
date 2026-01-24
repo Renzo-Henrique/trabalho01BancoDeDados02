@@ -32,8 +32,6 @@ As tabelas abaixo resumem as operações suportadas e como são classificadas in
 | **put-item**         | `dynamodb put-item`         | `write`   | Insere um novo item ou substitui um existente.        |
 | **update-item**      | `dynamodb update-item`      | `update`  | Atualiza atributos de um item existente.              |
 | **delete-item**      | `dynamodb delete-item`      | `delete`  | Remove um item da tabela.                             |
-| **batch-get-item**   | `dynamodb batch-get-item`   | `read`    | Lê múltiplos itens em lote.                           |
-| **batch-write-item** | `dynamodb batch-write-item` | `write`   | Insere ou remove múltiplos itens em lote.             |
 
 #### 2. Operações de Admin
 | Operação DynamoDB  | Sintaxe (CLI) | Ação RBAC  |Descrição  |

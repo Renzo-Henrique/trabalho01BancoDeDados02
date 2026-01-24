@@ -121,8 +121,8 @@ AWS_CLI_ACTION_MAP = {
     "put-item": "write",
     "update-item": "update",
     "delete-item": "delete",
-    "batch-get-item": "read",
-    "batch-write-item": "write",
+    # "batch-get-item": "read",
+    # "batch-write-item": "write",
 }
 
 def split_cli_command(command: str) -> List[str]:
@@ -211,7 +211,7 @@ def main():
     """Lógica principal do cliente CLI: login, loop de comandos e autorização."""
     print("🛡️ Cliente AWS CLI Autorizado para DynamoDB Local (RBAC) 🛡️")
     username = input("Usuário: ")
-    password = getpass("Senha: ")
+    password = input("Senha: ")
     
     # 1. Autenticação
     role_names = validar_usuario_cli(username, password)
