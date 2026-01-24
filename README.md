@@ -214,57 +214,76 @@ docker exec -it auth-cli pytest ./test_auth.py
 
 #### Testes de Autorização na Tabela customer (CRUD)
 
-| Papel      | Ação   | Resultado Esperado    | Justificativa                            |
-| ---------- | ------ | --------------------------- | --------------------- | ---------------------------------------- |
+| Papel      | Ação   | Resultado Esperado    | Justificativa  |
+| ---------- | ------ | --------------------- | -------------- |
 | **reader** | read   | ✔ Autorizado          | reader possui `customer:read`.           |
+| **reader** | scan  | ✔ Autorizado          | reader possui `customer:scan`.           |
+| **reader** | query   | ✔ Autorizado          | reader possui `customer:query`.           |
 | **reader** | write  | ❌ Erro de Autorização | reader **não** possui `customer:write`.  |
 | **reader** | update | ❌ Erro de Autorização | reader **não** possui `customer:update`. |
 | **reader** | delete | ❌ Erro de Autorização | reader **não** possui `customer:delete`. |
 | **writer** | read   | ✔ Autorizado          | writer possui `customer:read`.           |
+| **writer** | scan  | ✔ Autorizado          | writer possui `customer:scan`.           |
+| **writer** | query   | ✔ Autorizado          | writer possui `customer:query`.        |
 | **writer** | write  | ✔ Autorizado          | writer possui `customer:write`.          |
 | **writer** | update | ✔ Autorizado          | writer possui `customer:update`.         |
 | **writer** | delete | ✔ Autorizado          | writer possui `customer:delete`.         |
 | **admin**  | read   | ✔ Autorizado          | admin possui coringa `*`.                |
+| **admin** | scan  | ✔ Autorizado          | admin possui coringa `*`.           |
+| **admin** | query   | ✔ Autorizado          | admin possui coringa `*`.          |
 | **admin**  | write  | ✔ Autorizado          | admin possui coringa `*`.                |
-| **admin**  | update | ✔ Autorizado          | admin possui coringa `*`.                                |
+| **admin**  | update | ✔ Autorizado          | admin possui coringa `*`.                |
+| **admin** | delete | ✔ Autorizado          | admin possui coringa `*`.         |
 
 #### Testes de Acesso às Tabelas Sensíveis (users e roles)
 
-1. Reader
 
+| **Reader** | ------ | --------------------- | -------------------------------------- |
 | Ação   | Tabela | Resultado Esperado    | Justificativa                          |
 | ------ | ------ | --------------------- | -------------------------------------- |
 | read   | users  | ❌ Erro de Autorização | reader não possui permissão `users:*`. |
+| scan  | users  | ❌ Erro de Autorização | reader não possui permissão `users:*`. |
+| query  | users  | ❌ Erro de Autorização | reader não possui permissão `users:*`. |
 | write  | users  | ❌ Erro de Autorização | reader não possui permissão `users:*`. |
 | update | users  | ❌ Erro de Autorização | reader não possui permissão `users:*`. |
 | delete | users  | ❌ Erro de Autorização | reader não possui permissão `users:*`. |
 | read   | roles  | ❌ Erro de Autorização | reader não possui permissão `roles:*`. |
+| scan  | roles  | ❌ Erro de Autorização | reader não possui permissão `roles:*`. |
+| query  | roles  | ❌ Erro de Autorização | reader não possui permissão `roles:*`. |
 | write  | roles  | ❌ Erro de Autorização | reader não possui permissão `roles:*`. |
 | update | roles  | ❌ Erro de Autorização | reader não possui permissão `roles:*`. |
 | delete | roles  | ❌ Erro de Autorização | reader não possui permissão `roles:*`. |
 
-2. Writer
 
+| **Writer** | ------ | --------------------- | -------------------------------------- |
 | Ação   | Tabela | Resultado Esperado    | Justificativa                          |
 | ------ | ------ | --------------------- | -------------------------------------- |
 | read   | users  | ❌ Erro de Autorização | writer não possui permissão `users:*`. |
+| scan  | users  | ❌ Erro de Autorização | writer não possui permissão `users:*`. |
+| query  | users  | ❌ Erro de Autorização | writer não possui permissão `users:*`. |
 | write  | users  | ❌ Erro de Autorização | writer não possui permissão `users:*`. |
 | update | users  | ❌ Erro de Autorização | writer não possui permissão `users:*`. |
 | delete | users  | ❌ Erro de Autorização | writer não possui permissão `users:*`. |
 | read   | roles  | ❌ Erro de Autorização | writer não possui permissão `roles:*`. |
+| scan  | roles  | ❌ Erro de Autorização | writer não possui permissão `roles:*`. |
+| query  | roles  | ❌ Erro de Autorização | writer não possui permissão `roles:*`. |
 | write  | roles  | ❌ Erro de Autorização | writer não possui permissão `roles:*`. |
 | update | roles  | ❌ Erro de Autorização | writer não possui permissão `roles:*`. |
 | delete | roles  | ❌ Erro de Autorização | writer não possui permissão `roles:*`. |
 
-3. Admin
 
+| **Admin** | ------ | --------------------- | -------------------------------------- |
 | Ação   | Tabela | Resultado Esperado    | Justificativa                          |
 | ------ | ------ | --------------------- | -------------------------------------- |
 | read   | users  | ✔ Autorizado          | admin possui coringa `*`.              |
+| scan  | users  | ✔ Autorizado          | admin possui coringa `*`.              |
+| query  | users  | ✔ Autorizado          | admin possui coringa `*`.              |
 | write  | users  | ✔ Autorizado          | admin possui coringa `*`.              |
 | update | users  | ✔ Autorizado          | admin possui coringa `*`.              |
 | delete | users  | ✔ Autorizado          | admin possui coringa `*`.              |
 | read   | roles  | ✔ Autorizado          | admin possui coringa `*`.              |
+| scan  | roles  | ✔ Autorizado          | admin possui coringa `*`.              |
+| query  | roles  | ✔ Autorizado          | admin possui coringa `*`.              |
 | write  | roles  | ✔ Autorizado          | admin possui coringa `*`.              |
 | update | roles  | ✔ Autorizado          | admin possui coringa `*`.              |
 | delete | roles  | ✔ Autorizado          | admin possui coringa `*`.              |

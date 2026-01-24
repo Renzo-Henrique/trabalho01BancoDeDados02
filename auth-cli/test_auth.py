@@ -59,6 +59,26 @@ SENSITIVE_COMMANDS = {
 
         "delete": "dynamodb delete-item --table-name users "
                   "--key '{\"username\": {\"S\": \"x\"}}'",
+###############################################################
+        "read": "dynamodb get-item --table-name roles "
+                "--key '{\"role_name\": {\"S\": \"reader\"}}'",
+        
+        "scan": "dynamodb scan --table-name roles",
+
+        "query": "dynamodb query --table-name roles "
+                "--key-condition-expression 'role_name = :n' "
+                "--expression-attribute-values '{\":n\": {\"S\": \"TestUserCLI\"}}'",
+
+        "write": "dynamodb put-item --table-name roles "
+                 "--item '{\"role_name\": {\"S\": \"x\"}}'",
+
+        "update": "dynamodb update-item --table-name roles "
+                  "--key '{\"role_name\": {\"S\": \"x\"}}' "
+                  "--update-expression \"SET active = :a\" "
+                  "--expression-attribute-values '{\":a\": {\"BOOL\": true}}'",
+
+        "delete": "dynamodb delete-item --table-name roles "
+                  "--key '{\"role_name\": {\"S\": \"x\"}}'",
     }
 }
 
