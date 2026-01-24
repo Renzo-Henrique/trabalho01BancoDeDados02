@@ -33,15 +33,6 @@ As tabelas abaixo resumem as operações suportadas e como são classificadas in
 | **update-item**      | `dynamodb update-item`      | `update`  | Atualiza atributos de um item existente.              |
 | **delete-item**      | `dynamodb delete-item`      | `delete`  | Remove um item da tabela.                             |
 
-#### 2. Operações de Admin
-| Operação DynamoDB  | Sintaxe (CLI) | Ação RBAC  |Descrição  |
-| ------------------ | ------------------------- | ------------------------------------ | ---------------------------------------------------------- |
-| **create-table**   | `dynamodb create-table`   | `create` ou `table:create`           | Cria uma nova tabela no DynamoDB.                          |
-| **describe-table** | `dynamodb describe-table` | `describe` ou `table:describe`       | Obtém informações de estrutura, schema e status da tabela. |
-| **list-tables**    | `dynamodb list-tables`    | `list` ou `table:list`               | Lista todas as tabelas do banco.                           |
-| **update-table**   | `dynamodb update-table`   | `update_meta` ou `table:update_meta` | Altera metadados (índices, throughput, tags etc.).         |
-| **delete-table**   | `dynamodb delete-table`   | `delete_table` ou `table:delete`     | Remove permanentemente a tabela.                           |
-
 
 ## 🚀 Como Executar o Projeto Localmente
 
@@ -217,19 +208,7 @@ Esses testes tem como objetivo verificar se os papéis (**reader**, **writer** e
 ```
 docker exec -it auth-cli pytest ./test_auth.py
 ```
-#### Saída Esperada:
 
-```
-=============================== test session starts ================================
-platform linux -- Python 3.10.19, pytest-9.0.1, pluggy-1.6.0
-rootdir: /app
-plugins: anyio-4.11.0
-collected 46 items                                                                 
-
-test_auth.py ..............................................                  [100%]
-
-================================ 46 passed in 0.07s ================================
-```
 
 ### Cobertura dos testes por tipo de operação
 
@@ -247,7 +226,7 @@ test_auth.py ..............................................                  [10
 | **writer** | delete | ✔ Autorizado          | writer possui `customer:delete`.         |
 | **admin**  | read   | ✔ Autorizado          | admin possui coringa `*`.                |
 | **admin**  | write  | ✔ Autorizado          | admin possui coringa `*`.                |
-| **admin**  | update | ✔ Autorizado          | admin poss                               |
+| **admin**  | update | ✔ Autorizado          | admin possui coringa `*`.                                |
 
 #### Testes de Acesso às Tabelas Sensíveis (users e roles)
 

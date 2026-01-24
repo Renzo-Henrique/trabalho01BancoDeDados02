@@ -4,6 +4,9 @@ from typing import Dict
 
 CLI_CMD = ["python3", "main.py"]
 
+AUTORIZADO="[Autorizado]"
+AUTORIZADO_ERRO="ERRO DE AUTORIZAÇÃO"
+
 # --- Usuários reais do seed do DynamoDB ---
 USERS: Dict[str, Dict[str, str]] = {
     "reader": {"username": "reader1", "password": "123"},
@@ -39,6 +42,12 @@ SENSITIVE_COMMANDS = {
     "users": {
         "read": "dynamodb get-item --table-name users "
                 "--key '{\"username\": {\"S\": \"reader1\"}}'",
+        
+        "scan": "dynamodb scan --table-name users",
+
+        "query": "dynamodb query --table-name users "
+                "--key-condition-expression 'username = :n' "
+                "--expression-attribute-values '{\":n\": {\"S\": \"TestUserCLI\"}}'",
 
         "write": "dynamodb put-item --table-name users "
                  "--item '{\"username\": {\"S\": \"x\"}}'",
@@ -78,23 +87,26 @@ def run_cli(username: str, password: str, command: str) -> str:
 # ------------------------------------------------------------------
 
 @pytest.mark.parametrize("role, action, expected", [
-    ("reader", "read", "[Autorizado]"),
-    ("reader", "scan", "[Autorizado]"),
-    ("reader", "query", "[Autorizado]"),
-    ("reader", "write", "ERRO DE AUTORIZAÇÃO"),
-    ("reader", "update", "ERRO DE AUTORIZAÇÃO"),
-    ("reader", "delete", "ERRO DE AUTORIZAÇÃO"),
+    ("reader", "read", AUTORIZADO),
+    ("reader", "scan", AUTORIZADO),
+    ("reader", "query", AUTORIZADO),
+    ("reader", "write", AUTORIZADO_ERRO),
+    ("reader", "update", AUTORIZADO_ERRO),
+    ("reader", "delete", AUTORIZADO_ERRO),
 
-    ("writer", "read", "[Autorizado]"),
-    ("writer", "scan", "[Autorizado]"),
-    ("writer", "query", "[Autorizado]"),
-    ("writer", "write", "[Autorizado]"),
-    ("writer", "update", "[Autorizado]"),
-    ("writer", "delete", "[Autorizado]"),
+    ("writer", "read", AUTORIZADO),
+    ("writer", "scan", AUTORIZADO),
+    ("writer", "query", AUTORIZADO),
+    ("writer", "write", AUTORIZADO),
+    ("writer", "update", AUTORIZADO),
+    ("writer", "delete", AUTORIZADO),
 
-    ("admin", "read", "[Autorizado]"),
-    ("admin", "write", "[Autorizado]"),
-    ("admin", "delete", "[Autorizado]"),
+    ("admin", "read", AUTORIZADO),
+    ("admin", "scan", AUTORIZADO),
+    ("admin", "query", AUTORIZADO),
+    ("admin", "write", AUTORIZADO),
+    ("admin", "update", AUTORIZADO),
+    ("admin", "delete", AUTORIZADO),
 ])
 def test_crud_authorization(role, action, expected):
     creds = USERS[role]
@@ -103,9 +115,26 @@ def test_crud_authorization(role, action, expected):
     assert expected in output, f"\nOUTPUT COMPLETO:\n{output}"
 
 @pytest.mark.parametrize("role, action, expected", [
-    ("reader", "read", "ERRO DE AUTORIZAÇÃO"),
-    ("writer", "write", "ERRO DE AUTORIZAÇÃO"),
-    ("admin", "delete", "[Autorizado]"),
+    ("reader", "read", AUTORIZADO_ERRO),
+    ("reader", "scan", AUTORIZADO_ERRO),
+    ("reader", "query", AUTORIZADO_ERRO),
+    ("reader", "write", AUTORIZADO_ERRO),
+    ("reader", "update", AUTORIZADO_ERRO),
+    ("reader", "delete", AUTORIZADO_ERRO),
+
+    ("writer", "read", AUTORIZADO_ERRO),
+    ("writer", "scan", AUTORIZADO_ERRO),
+    ("writer", "query", AUTORIZADO_ERRO),
+    ("writer", "write", AUTORIZADO_ERRO),
+    ("writer", "update", AUTORIZADO_ERRO),
+    ("writer", "delete", AUTORIZADO_ERRO),
+
+    ("admin", "read", AUTORIZADO),
+    ("admin", "scan", AUTORIZADO),
+    ("admin", "query", AUTORIZADO),
+    ("admin", "write", AUTORIZADO),
+    ("admin", "update", AUTORIZADO),
+    ("admin", "delete", AUTORIZADO),
 ])
 def test_sensitive_users_table(role, action, expected):
     creds = USERS[role]
@@ -124,5 +153,6 @@ def test_invalid_login():
         "wrongpassword",
         CRUD_COMMANDS["read"]
     )
+    print(output)
 
     assert "Autenticação falhou" in output

@@ -28,4 +28,6 @@ for ITEMS_FILE in "$DATA_DIR"/*.json; do
     done
 done
 
+
+
 echo "===== Todos os itens foram inseridos ==="

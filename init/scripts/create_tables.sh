@@ -24,3 +24,5 @@ done
 
 # Pequeno delay para garantir que as tabelas estejam ativas
 sleep 2
+
+bash "$INIT_SCRIPT"

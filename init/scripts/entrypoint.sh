@@ -15,13 +15,6 @@ java -jar DynamoDBLocal.jar -sharedDb -dbPath ./data &
 echo "Aguardando o DynamoDB iniciar..."
 sleep 3
 
-if [[ "$RESET_DB" == "true" ]]; then
-	echo "=== RESET_DB=true :: Limpando todas as tabelas ==="
-	bash $CLEAN_TABLE_SCRIPT
-else
-	echo "=== RESET_DB=false :: Mantendo tabelas existentes ==="
-fi
-
 
 if [ -d "$DB_DIR" ] && [ -f "$DB_FILE" ]; then
     echo "Banco de dados já inicializado. Pulando inicialização"
@@ -32,6 +25,6 @@ fi
 
 
 echo " "
-echo "Inicializacao finalizada!"
+echo "Inicializado. Leia o README para mais orientações!"
 # Mantém o processo principal em foreground
 wait
